@@ -1,0 +1,64 @@
+---
+title: Github clone速度慢解决办法
+date: 2020-02-19 16:42:17
+categories:
+- git
+tags:
+- git
+- github
+---
+关键字: Github clone速度慢, Github clone 代理
+Github 在国内使用时，很多时候clone都很慢，这里介绍如何使这个过程走代理，以达到加速的目的。
+
+Github clone的方式有两种，`HTTPS`和`SSH`:
+
+## [推荐❤️]通过`SSH`
+{% asset_img ssh.png %}
+`SSH`的clone方式也是大家使用的最多的方式，但`SSH`一般情况是不走`http`、`https`的代理的，在终端执行`export https_proxy=xxx`，甚至将代理软件设置为全局代理也无法令`SSH`通过代理。这里介绍如何使`SSH` clone时走代理：
+把下面这段写进 `~/.ssh/config` 文件（因为用到私玥认证所以带了 IdentityFile 选项）
+```shell
+Host github.com
+    User git
+    ProxyCommand /usr/bin/nc -x 127.0.0.1:8088 %h %p
+    IdentityFile ~/.ssh/id_rsa
+```
+这里 127.0.0.1:8088 是一个`SOCKS5`代理，这样便能令`SSH` clone GitHub时通过代理，达到加速的目的。
+这种设置方法依赖Linux命令[`nc`](https://linux.die.net/man/1/nc)和 [`ssh config`](https://linux.die.net/man/5/ssh_config) `ProxyCommand`。
+
+## 通过`HTTPS`
+{% asset_img https.png %}
+通过`HTTPS`形式的clone通过代理加速很简单，和普通的网页访问的加速并没有不一样：
+```shell
+export HTTPS_PROXY=socks5://127.0.0.1:1080
+git clone https://github.com/lightjiao/lightjiao.github.io.git
+```
+另外，`Git`本身有一个`http.proxy/https.proxy`的设置：
+```shell
+git config --global http.proxy socks5://127.0.0.1:1080
+git config --global https.proxy socks5://127.0.0.1:1080
+```
+但`HTTPS` clone的方式本身有一个缺点，每次与远端repo通讯时候都会要求填写用`Github`户名和密码，使用比较繁琐
+
+## A Little More on Git Protocol
+By saying "Git Protocol", I mean a Git Server Protocal called "The Git Protocol". Its URI likes `git://server/project.git`. Note it starts with a `git://`, not `ssh://` or `http://` or something else.
+
+It's not commonly used, so you can skip this. I write this mainly for completeness of Git proxy settings.
+
+Git a has configration `core.gitProxy` dedicated for this protocol, its man reads:
+```
+core.gitProxy
+
+A "proxy command" to execute (as command host port) instead of establishing direct connection to the 
+remote server when using the Git protocol for fetching. If the variable value is in the 
+"COMMAND for DOMAIN" format, the command is applied only on hostnames ending with the specified 
+domain string. This variable may be set multiple times and is matched in the given order; the first 
+match wins.
+
+Can be overridden by the GIT_PROXY_COMMAND environment variable (which always applies universally, 
+without the special "for" handling).
+```
+You can set it by `git config`.
+
+参考来源：
+ - https://www.zhihu.com/question/27159393/answer/145122287
+ - https://gist.github.com/coin8086/7228b177221f6db913933021ac33bb92
