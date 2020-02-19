@@ -98,6 +98,6 @@ theme: 3-hexo
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
-  type: 'git'
+  type: git
   repo: https://github.com/lightjiao/lightjiao.github.io
   branch: master
