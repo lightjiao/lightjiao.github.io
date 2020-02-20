@@ -101,3 +101,7 @@ deploy:
   type: git
   repo: git@github.com:lightjiao/lightjiao.github.io.git
   branch: master
+
+search:
+    path: search.xml
+    field: post
