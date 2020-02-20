@@ -219,8 +219,8 @@ gentie:
 gitalk:
   githubID: lightjiao
   repo: lightjiao.github.io
-  ClientID:
-  ClientSecret:
+  ClientID: 56f6639ad6699f09d1cb
+  ClientSecret: ef058e2bdd8621ce4c029e424eaa3d1d6c6757de
   adminUser: lightjiao
   distractionFreeMode: true
   language: zh-CN
