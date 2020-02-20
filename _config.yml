@@ -99,5 +99,5 @@ theme: 3-hexo
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
   type: git
-  repo: https://github.com/lightjiao/lightjiao.github.io
+  repo: git@github.com:lightjiao/lightjiao.github.io.git
   branch: master
