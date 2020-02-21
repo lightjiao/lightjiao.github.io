@@ -103,5 +103,9 @@ deploy:
   branch: master
 
 search:
-    path: search.xml
-    field: post
+  path: search.xml
+  field: post
+
+index_generator_plus:
+  path: ''
+  per_page: 10
