@@ -60,7 +60,7 @@ menu:
       type: 3  # 跳转类型 3：打开新的tab页
 
 # 文末声明
-article_txt: 转载请注明来源，欢迎对文章中的引用来源进行考证，欢迎指出任何有错误或不够清晰的表达。可以在下面评论区评论，也可以邮件至 lightjiao@gmail.com
+article_txt: # 转载请注明来源，欢迎对文章中的引用来源进行考证，欢迎指出任何有错误或不够清晰的表达。可以在下面评论区评论，也可以邮件至 lightjiao@gmail.com
 
 bottom_text: ©2020-2020
 # 自定义页面最下方的站点版权信息
@@ -79,7 +79,7 @@ searchAll: true
 #   field: post
 
 
-copyright: true
+copyright: false
 # Copyright info. of post | 文末版权信息
 
 word_count: true
@@ -104,7 +104,7 @@ article_list:
   title: '#383636' # 文章列表标题颜色
   datetime: '#5e5e5f' # 文章发布日期颜色
   hover:
-    background: '#e2e0e0'  # 背景色:提供几种：'#c1bfc1'  '#fbf4a8'
+    background: '#007d72' #'#e2e0e0'  # 背景色:提供几种：'#c1bfc1'  '#fbf4a8'
     color:     # 文字颜色 提供几种：'#ffffff'
 # 注意：由于颜色如果包含#，使用单引号 ' 引起来
 
