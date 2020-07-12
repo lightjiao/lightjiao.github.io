@@ -1,0 +1,42 @@
+<%
+config.social = config.social || {};
+theme.social = theme.social || {};
+var github = config.social.github || theme.social.github;
+var weibo = config.social.weibo || theme.social.weibo;
+var linkedin = config.social.linkedin || theme.social.linkedin;
+var location = config.location || theme.location;
+var url = config.url;
+var flagcounter_href = config.flagcounter_href;
+var flagcounter_img_src = config.flagcounter_img_src;
+%>
+<div class="footer-wrapper container">
+  <footer class="footer clearfix">
+    <div class="clearfix">
+    <a href="<%= config.url %>" class="footer-logo">
+      <i class="fa fa-github"></i>
+    </a>
+    <ul class="footer-social-link">
+      <li>© 2019 <%= config.author %></li>
+      <li><a href="<%= url %>">Home</a></li>
+      <% if(github){ %>
+      <li><a href="<%= github %>">Github</a></li>
+      <% }if(weibo){ %>
+      <li><a href="<%= weibo %>">Weibo</a></li>
+      <% }if(linkedin){ %>
+      <li><a href="<%= linkedin %>">Linkedin</a></li>
+      <% } %>
+    </ul>
+    <div class="footer-theme-info">
+      Theme <a href="//github.com/sabrinaluo/hexo-theme-replica">Replica</a>
+      by <a href="//github.com/sabrinaluo">Hiitea</a> ❤ Powered by Hexo
+    </div>
+    </div>
+    <% if(flagcounter_href){ %>
+    <div class="footer-pageview">
+        <a href="<%= flagcounter_href %>">
+          <img src="<%= flagcounter_img_src %>">
+        </a>
+    </div>
+    <% } %>
+  </footer>
+</div>

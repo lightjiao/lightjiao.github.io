@@ -1,0 +1,244 @@
+<div class="calendar-container" id="calendar">
+  <div class="calendar">
+    <h3>
+      {{posts.length}} contributions in the last year
+    </h3>
+    <div class="calendar-graph-container">
+      <div class="calendar-graph">
+        <svg width="676" height="104" @mouseout="mouseoverDate=null">
+          <g transform="translate(16, 20)">
+            <g v-for="week in calendar" :transform="week.transform">
+              <rect v-for="day in week.days"
+                    :x="day.x"
+                    :y="day.y"
+                    :fill="day.fill"
+                    @click="selectedDate=day.date"
+                    @mouseover="mouseoverDate=day.date"
+                    :class="{active:selectedDate===day.date}"
+                    data-count="{{day.posts.length}}"
+                    data-date="{{day.date}}"
+                    class="day" width="10" height="10"
+              ></rect>
+            </g>
+
+            <text v-for="month in monthLabels"
+                  :x="month.x"
+                  y="-5"
+                  class="month">{{month.text}}
+            </text>
+
+
+            <text text-anchor="start" class="wday" dx="-14" dy="8"
+                  style="display: none;">S
+            </text>
+            <text text-anchor="start" class="wday" dx="-14" dy="20">Mon</text>
+            <text text-anchor="start" class="wday" dx="-14" dy="32"
+                  style="display: none;">T
+            </text>
+            <text text-anchor="start" class="wday" dx="-14" dy="44">Wed</text>
+            <text text-anchor="start" class="wday" dx="-14" dy="57"
+                  style="display: none;">T
+            </text>
+            <text text-anchor="start" class="wday" dx="-14" dy="69">Fri</text>
+            <text text-anchor="start" class="wday" dx="-14" dy="81"
+                  style="display: none;">S
+            </text>
+          </g>
+        </svg>
+        <div class="svg-tip svg-tip-one-line"
+             v-bind:style="{ top: svgtip.top, left: svgtip.left, display: svgtip.display}">
+          <strong>{{svgtip.text}}</strong> on
+          {{moment(mouseoverDate).format('MMM DD, YYYY')}}
+        </div>
+      </div>
+      <div class="calendar-footer clearfix">
+      <span>
+        <a href="#">Learn how we count contributions.</a>
+      </span>
+        <div class="calendar-legend">
+          <span>Less</span>
+          <ul class="legend">
+            <li style="background-color: #eee"></li>
+            <li style="background-color: #d6e685"></li>
+            <li style="background-color: #8cc665"></li>
+            <li style="background-color: #44a340"></li>
+            <li style="background-color: #1e6823"></li>
+          </ul>
+          <span>More</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Contribution activity</h3>
+  <div class="contribution-list">
+    <ul>
+      <li v-for="post in posts | filterBy selectedDate in 'date'">
+        <a href="{{post.url}}">{{post.title}}
+        </a>
+        <span>{{post.date}}</span>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<%
+var dateFormat = 'YYYY-MM-DD';
+var postsArr = [];
+var today = moment().format('YYYY-MM-DD');
+var oneYearAgo = moment(today).subtract(1, 'years');
+
+site.posts.data.forEach(function(post) {
+  if (post.date > oneYearAgo) {
+    postsArr.push({
+      date: post.date.format(dateFormat),
+      title: post.title,
+      url: post.permalink
+    });
+  }
+});
+
+postsArr.sort(function(a, b) {
+  return new Date(a.date) - new Date(b.date);
+});
+%>
+<script>
+  var posts = <%- JSON.stringify(postsArr) %>;
+  var today = moment().format('YYYY-MM-DD');
+  var oneYearAgo = moment(today).subtract(1, 'years');
+  posts = posts.filter(function(post) {
+    return new Date(post.date) > oneYearAgo;
+  });
+  var monthLabels = [];
+  var monthName = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var calendar = getCalendar(posts);
+
+  var dateRange = {
+    start: moment(oneYearAgo).format('MMM D, YYYY'),
+    end: moment().format('MMM D, YYYY')
+  }
+
+  var app = new Vue({
+    el: '#calendar',
+    data: {
+      posts: posts,
+      selectedDate: null,
+      calendar: calendar,
+      dateRange: dateRange,
+      mouseoverDate: null,
+      moment: moment,
+      monthLabels: monthLabels
+    },
+    created: function() {
+      this.selectedDate = 'none';
+    },
+    methods: {},
+    computed: {
+      svgtip: function() {
+        var date = this.mouseoverDate;
+        var display = date ? 'block' : 'none';
+        if (date) {
+          var coordinator = getIndexByDate(date);
+          var x = coordinator[0];
+          var y = coordinator[1];
+          var len = this.calendar[x].days[y].posts.length;
+          var text = len ? len + ' contributions' : 'No contributions';
+          var left = coordinator[0] * 12 - 37 + 'px';
+          coordinator[1] = coordinator[0] ? coordinator[1] : coordinator[1] + oneYearAgo.day();
+          var top = coordinator[1] * 12 + 12 - 32 + 'px';
+        }
+        return {
+          text: text,
+          left: left,
+          top: top,
+          display: display
+        }
+      }
+    }
+  });
+
+  function getCalendar(posts) {
+    // raw calendar
+    var maxCount = 0;
+    var tmr = new Date();
+    tmr.setDate(tmr.getDate() + 1);
+    var tmrStr = tmr.toISOString().slice(0, 10);
+    var date = new Date();
+    date.setYear(date.getFullYear() - 1); // start date is a year ago;
+    var calendar = [];
+    while (date.toISOString().slice(0, 10) !== tmrStr) {
+      var day = date.getDay();
+      if (day === 0 || calendar.length === 0) {
+        var x = calendar.length * 13;
+        calendar.push({
+          transform: 'translate(' + x + ',0)',
+          days: []
+        })
+      }
+
+      calendar[calendar.length - 1].days.push({
+        x: 14 - calendar.length,
+        y: day * 12,
+        date: date.toISOString().slice(0, 10),
+        posts: []
+      });
+
+      if (day === 0 && date.getDate() < 8) {
+        monthLabels.push({
+          x: 14 - calendar.length + x,
+          text: monthName[date.getMonth() - 1]
+        })
+      }
+
+      date.setDate(date.getDate() + 1);
+    }
+
+    // handle post info
+    posts.forEach(function(post) {
+      var x = getIndexByDate(post.date)[0];
+      var y = getIndexByDate(post.date)[1];
+
+      calendar[x].days[y].posts.push({
+        title: post.title,
+        url: post.url
+      });
+
+      var len = calendar[x].days[y].posts.length;
+      maxCount = Math.max(len, maxCount);
+    })
+
+    // handle fill color
+    calendar.forEach(function(week) {
+      week.days.forEach(function(day) {
+        day.fill = getColorByLength(day.posts.length, maxCount);
+      })
+    })
+
+    return calendar;
+  }
+
+  function getIndexByDate(date) {
+    date = moment(date);
+    var firstColumnLen = 7 - oneYearAgo.day();
+    var days = date.diff(oneYearAgo, 'days');
+
+    var x = days > firstColumnLen - 1 ? Math.ceil((days - firstColumnLen + 1) / 7) : 0;
+    var y = days > firstColumnLen - 1 ? date.day() : date.day() - oneYearAgo.day();
+    return [x, y];
+  }
+
+  function getColorByLength(len, max) {
+    var colors = ['#eee', '#d6e685', '#8cc665', '#44a340', '#1e6823'];
+    var colorsLen = colors.length - 1;
+    var color = len ? colors[0] : colors[1];
+    var interval = max / colorsLen;
+    if (max < colorsLen) {
+      color = colors[len];
+    } else {
+      color = colors[Math.ceil(len / interval)];
+    }
+    return color;
+  }
+
+</script>
+

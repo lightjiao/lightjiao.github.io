@@ -1,0 +1,103 @@
+.post
+  &-container
+    border: $border-grey
+    border-radius: 3px
+    margin-bottom: 30px
+    @media (max-width: $screen-sm)
+      border-radius: 0
+      border-right: none
+      border-left: none
+      border-top: none
+    >h3
+      background-color: $grey-lighter
+      margin: 0
+      padding: 10px 10px 10px
+      font-size: 14px
+      line-height: 17px
+      border-bottom: 1px solid $grey-border
+      border-radius(3px 3px 0 0)
+      @media (max-width: $screen-sm)
+        padding: 15px
+  &-date
+    font-size: 13px
+    line-height: 20px
+    color: #586069
+    font-weight: normal
+
+  &-content
+    @media (max-width: $screen-sm)
+      padding: 15px
+      font-size: 15px
+    padding: 45px
+    word-wrap: break-word
+    font-family: $font-family-main
+    font-size: 16px
+    >*:first-child
+      margin-top: 0 !important
+    h1, h2, h3, h4, h5, h6
+      font-weight: 600
+      line-height: 1.25
+      margin-top: 24px  
+      margin-bottom: 16px  
+    img
+      max-width: 100%
+    h1
+      padding-bottom: 0.3em
+      font-size: 2em
+      border-bottom: $border-grey-light
+    h2
+      padding-bottom: 0.3em
+      font-size: 1.5em
+      border-bottom: $border-grey-light
+    h3
+      font-size: 1.25em
+
+    p
+      margin-top: 0
+      margin-bottom: 16px
+
+    code
+      border-radius: 3px
+      background-color: #f3f3f4
+      padding-top: 0.2em
+      padding-bottom: 0.2em
+      font-size: 85%
+      font-family: $font-family-code
+      &::before, &::after
+        letter-spacing: -0.2em
+        content: "\00a0"
+
+    blockquote
+      padding: 0 1em
+      color: #6a737d
+      border-left: 0.25em solid #dfe2e5
+      margin: 0
+
+    >table
+      display: block
+      width: 100%
+      overflow: auto
+      border-spacing: 0
+      border-collapse: collapse
+      tr
+        border-top: 1px solid #c6cbd1
+        &:nth-child(2n) 
+          background-color: $grey-lighter
+
+      th, td
+        padding: 6px 13px  
+        border: 1px solid #dfe2e5
+      th
+        font-weight: 600
+    kbd
+      display: inline-block;
+      padding: 3px 5px;
+      font-size: 11px;
+      line-height: 10px;
+      color: #444d56;
+      vertical-align: middle;
+      background-color: #fafbfc;
+      border: solid 1px #c6cbd1;
+      border-bottom-color: #959da5;
+      border-radius: 3px;
+      box-shadow: inset 0 -1px 0 #959da5;

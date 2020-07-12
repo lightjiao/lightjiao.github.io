@@ -1,0 +1,345 @@
+@import "./_variables"
+@import "./base"
+@import "./navbar"
+@import "./header"
+@import "./code"
+@import "./post"
+@import "./footer"
+@import "./calendar"
+
+.category-list-count:before {
+  content: ' '
+}
+
+.category-list-count:after {
+  content: ' '
+}
+// left bar
+.blog-intro
+  width: 25%
+  padding-right: 16px
+  float: left
+  @media (max-width: $screen-sm)
+    width: 100%
+    padding-left: 16px
+    padding-right: 16px
+    background-color: #fafbfc
+    border-bottom: 1px solid #e1e4e8
+  .avatar
+    width: 230px
+    @media (max-width: $screen-sm)
+      width: 110px
+      display: block
+      float: left
+      margin-right: 15px
+  &-user
+    @media (max-width: $screen-sm)
+      padding-top: 15px
+      padding-bottom: 15px
+  .user-detail
+    border-top: 1px solid #eee
+    padding: 16px 0
+    list-style: none
+    margin: 0
+    font-size: 14px
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: top;
+    @media (max-width: $screen-sm)
+      padding: 0
+      margin-top: 7px
+      margin-left: -2px
+      border: none
+      font-size: 12px
+      line-height: 1.8
+    li
+      padding-top: 4px
+      @media (max-width: $screen-sm)
+        padding: 0
+    i
+      display: inline-block
+      width: 20px
+      text-align: center
+
+  .social-media
+    border-top: 1px solid #eee
+    padding: 16px 0
+    h4
+      font-size: 16px
+      margin: 0 0 4px 0
+    ul
+      padding: 0
+      list-style: none
+      margin: 0
+    &-item
+      float: left
+      margin-right: 5px
+      font-size: 25px
+      width: 35px
+      height: 35px
+      background: #F0F0F0
+      border-radius: 3px
+      text-align: center
+      a
+        line-height: 35px
+      .fa-github
+        color: #24292e
+      .fa-weibo
+        color: #E6162D
+      .fa-linkedin
+        color: #0077B5
+
+
+.user-name
+  padding: 16px 0
+  @media (max-width: $screen-sm)
+    padding: 0
+
+.blog-title
+  font-size: 26px
+  line-height: 30px
+  font-weight: 600
+  @media (max-width: $screen-sm)
+    margin: 0
+    font-size: 16px
+    line-height: 1.5
+
+.blog-author
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: 24px;
+  color: #666;
+  @media (max-width: $screen-sm)
+    margin: 0
+    font-size: 12px
+
+.blog-description
+  margin-bottom: 12px
+  color: #6a737d
+  font-size: 14px
+  @media (max-width: $screen-sm)
+    clear: both
+    font-size: 12px
+    margin: 8px 0 0 0
+
+.blog-detail
+  width: 75%
+  padding-left: 8px
+  float: left
+  @media (max-width: $screen-sm)
+    width: 100%
+    padding-left: 16px
+    padding-right: 16px
+  &-nav
+    border-bottom: 1px solid #d1d5da
+    ul
+      list-style: none
+      padding: 0
+      margin: 0
+      li
+        float: left
+        padding: 0
+        height: 60px
+        color: #586069
+        &.selected
+          border-bottom: 2px solid #e36209
+          a, a:hover, a:link, a:visited
+            color: #24292e
+        a, a:hover, a:link, a:visited
+          text-decoration: none
+          color: #586069
+          padding: 0 20px
+          display: inline-block
+          line-height 60px
+
+.counter
+  background: #eee
+  border-radius: 20px
+  padding: 2px 5px
+  display: inline-block
+  font-weight:600
+  line-height: 1
+  font-size: 12px
+
+.right-title
+  margin-top: 24px
+  margin-bottom: 8px
+  font-size: 16px
+
+.user-info
+  padding-right: 16px
+  &-avatar
+    width: 230px
+    max-height: 230px
+    vertical-align: middle
+    display: inline-block
+    overflow: hidden
+
+.recent-post
+  list-style: none
+  padding: 0
+  margin: 0 0 24px 0
+  @media (max-width: $screen-sm)
+    width: 100%
+    border: 1px solid #d1d5da
+    border-radius: 3px
+  &-item
+    border: 1px solid #d1d5da
+    border-radius: 3px
+    width: 354px
+    display: flex
+    padding: 16px
+    margin-bottom: 16px
+    height: 118px
+    float: left
+    @media (max-width: $screen-sm)
+      width: 100%
+      float: none
+      border: none
+      height: auto
+      margin: 0
+      padding: 14px
+      border-top: 1px solid #d1d5da
+
+      &:first-child
+        border-top: none
+      
+      /* quick fix for #18 */
+      padding: 0
+
+      .clearfix
+        width: 100%
+      .post-title
+        position: relative
+        i
+          position: absolute
+          top: 20px
+          left: 14px
+        a
+          display: block
+          padding: 14px
+          padding-left: 32px
+
+    &:nth-child(odd)
+      margin-right: 5px
+      @media (max-width: $screen-sm)
+        magrin: 0
+    &:nth-child(even)
+      margin-left: 5px
+      @media (max-width: $screen-sm)
+        margin: 0
+
+.post-title
+  margin: 0
+  line-height: 21px
+  max-width: 325px
+  @media (max-width: $screen-sm)
+    white-space: normal
+  i
+    padding-right: 5px
+
+.post-description
+  margin: 8px 0 16px 0
+  font-size: 12px
+  color: #586069
+  height: 20px
+  max-width: 325px
+
+.post-info
+  margin: 0
+  color: #586069
+  font-size: 12px
+  span
+    margin-right: 16px
+  a.category-link
+    color: inherit
+
+// right bar
+.archive-list
+  list-style: none
+  padding: 0
+  &-item
+    padding: 24px 0
+    border-bottom: 1px solid #e1e4e8
+    h2
+      margin: 0
+      font-size: 20px
+      font-weight: 600
+    p
+      font-size: 14px
+      color: #586069
+      margin: 6px 0 8px 0
+    .post-info
+      margin-top: 8px
+      font-size: 12px
+
+.tag-list
+  padding: 4px 0
+  list-style: none
+  margin: 0
+  &-item
+    float: left
+    margin: 0 0.5em 0.5em 0
+    padding: 0.3em 0.9em
+    background: #f1f8ff
+    border-radius: 3px
+    color: #0366d6
+    font-size: 12px
+    &:hover
+      background: #ddeeff
+.tag-list-count
+  padding-left: 5px
+  font-weight: bold
+
+// google search
+#google-search
+  display: table-cell
+  width: 100%
+
+  #___gcse_0
+    input[name="search"]
+      background: none !important
+      color: $white
+      border: none
+      min-height: 30px
+      background: none
+      padding: 0 8px !important
+      vertical-align: middle
+      outline: none
+      color: inherit
+      font-size: inherit
+      text-indent: 0 !important
+      &:focus
+        outline-width: 0
+
+  .gsc-control-cse
+    background-color: transparent
+    border: none
+    padding: 0
+
+  .gsc-search-button, .gsc-clear-button
+    display: none
+
+  .gsc-branding
+    display: none !important
+
+  .gsc-input
+    padding-right: 0 !important
+
+  .gsc-input-box
+    border:none
+    background: none
+    &-focus
+      box-shadow: none
+
+  .gsib_a
+    padding: 0
+
+  .gsib_b
+    display: none
+
+.disqus-container
+  @media (max-width: $screen-sm)
+    padding: 0 15px

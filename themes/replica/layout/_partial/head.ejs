@@ -1,0 +1,39 @@
+<%
+var tags = page.tags ? page.tags.data : '';
+var favicon = config.favicon || 'https://github.githubassets.com/favicon.ico';
+%>
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>
+    <%= (page.title || config.title) + (page.title ? ' | ' + config.title : '') %>
+  </title>
+  <meta name="description" content="<%= config.description %>">
+  <%
+  if(tags){ %>
+  <meta name="keywords" content="
+  <%= tags.map(function(tag) {
+    return tag.name
+  }).join(',') %>
+  ">
+  <% } %>
+  <meta name="author" content="<%= config.author %>">
+
+  <meta http-equiv="Cache-Control" content="no-transform"/>
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="theme-color" content="#1e2327">
+  <link rel="apple-touch-icon" href="https://github.githubassets.com/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://github.githubassets.com/apple-touch-icon-180x180.png">
+
+  <link rel="icon" type="image/x-icon" href="<%= favicon %>">
+  <link rel="stylesheet" href="<%= config.root %>css/main.css">
+  <link rel="stylesheet"
+        href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <%- partial('_widget/google-analytics') %>
+  <%- partial('_widget/baidutongji') %>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/vue/1.0.25-csp/vue.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.11.2/moment.min.js"></script>
+</head>

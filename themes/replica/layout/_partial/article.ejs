@@ -1,0 +1,31 @@
+<%
+var publishTimestamp = page.date.valueOf();
+var article_edit = config.article_edit || {};
+%>
+<div class="post-container container">
+  <h3>
+    <i class="fa fa-user-o"></i>
+    <%= config.author || '' %>
+
+    <span class="post-date float-right" title="{{moment(<%= publishTimestamp %>).format('MMM DD, YYYY, h:mm:ss A')}}">
+      <% if(article_edit.enable){ %>
+      <a class="fa fa-pencil-square-o" href="<%= article_edit.prefix%><%= page.source%>" target="_blank">
+      </a>
+      <% }else{ %>
+          <i class="fa fa-pencil-square-o"></i>
+      <%  } %>
+      {{moment(<%= publishTimestamp %>).fromNow()}}
+    </span>
+  </h3>
+
+  <article class="post-content">
+    <h1><%= page.title || 'Untitle' %></h1>
+    <%- page.content %>
+  </article>
+</div>
+
+<% if (config.gitalk ) { %>
+    <%- partial('_widget/gitalk') %>
+<% }else{ %>
+    <%- partial('_widget/disqus') %>
+<% } %>
