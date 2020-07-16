@@ -1,6 +1,7 @@
 ---
 title: "About"
-date: 2020-07-12T20:51:19+08:00
-draft: true
+layout: "about"
 ---
 
+## 关于我
+一个从web后台转行游戏前端的程序员
