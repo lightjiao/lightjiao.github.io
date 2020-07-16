@@ -1,4 +1,22 @@
-baseURL = "http://example.org/"
+baseURL = "http://lightjiao.github.io/"
 languageCode = "en-us"
-title = "My New Hugo Site"
+title = "Lightjiao的博客"
 theme = "github-style"
+copyright = "© 2019. Theme by <a href=\"https://github.com/MeiK2333/github-style\"><span>github-style</span></a>"
+
+summaryLength = 1
+
+[params]
+  author = "Lightjiao"
+  description = "Hello world."
+  github = "lightjiao"
+  email = "lightjiao@gmail.com"
+  avatar = "https://www.gravatar.com/avatar/099703df237acafd6c3b962721f959d7.jpg?s=200"
+
+  --facebook = "example"
+  --twitter = "example"
+  --misskey = "user profile url"
+  --mastodon = "user profile url"
+  --utterances = "example/example.github.io"
+  --url = "https://example.com"
+  --keywords = "blog, google analytics"
