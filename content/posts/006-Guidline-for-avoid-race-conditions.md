@@ -5,6 +5,7 @@ categories:
  - Unity
 tags:
  - Unity
+isCJKLanguage: true
 ---
 
 - Don't call methods in  `Awake()`

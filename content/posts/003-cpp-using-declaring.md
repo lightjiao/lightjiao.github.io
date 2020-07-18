@@ -5,6 +5,7 @@ categories:
  - Cpp
 tags:
  - Cpp
+isCJKLanguage: true
 ---
 
 以下内容节选自《C++ Premier 第5版》第75页

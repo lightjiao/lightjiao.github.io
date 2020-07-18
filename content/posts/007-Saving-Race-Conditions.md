@@ -5,6 +5,7 @@ categories:
  - Unity
 tags:
  - Unity
+isCJKLanguage: true
 ---
 
 This lecture's github commit:

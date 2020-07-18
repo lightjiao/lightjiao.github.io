@@ -5,6 +5,7 @@ categories:
  - UE4
 tags: 
  - UE4
+isCJKLanguage: true
 ---
 
 以class 名为 `TestWidget` 为例
