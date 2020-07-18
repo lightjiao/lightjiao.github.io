@@ -17,7 +17,7 @@ jobs:
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
         with:
-          hugo-version: "0.72.0"
+          hugo-version: "0.74.2"
           extended: true
 
       - name: Build
@@ -29,3 +29,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
           publish_branch: master
+          keep_files: false
+          force_orphan: true
+          full_commit_message: Deploy hugo
