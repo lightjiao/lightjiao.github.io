@@ -4,7 +4,7 @@ title = "Lightjiao的博客"
 theme = "github-style"
 copyright = "© 2019. Theme by <a href=\"https://github.com/MeiK2333/github-style\"><span>github-style</span></a>"
 
-summaryLength = 1
+summaryLength = 30
 
 [params]
   author = "Lightjiao"
