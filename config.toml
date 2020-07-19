@@ -1,5 +1,5 @@
-baseURL = "http://lightjiao.github.io/"
-languageCode = "en-us"
+baseURL = "https://lightjiao.github.io"
+languageCode = "zh-cn"
 title = "Lightjiao的博客"
 theme = "github-style"
 copyright = "© 2019. Theme by <a href=\"https://github.com/MeiK2333/github-style\"><span>github-style</span></a>"
