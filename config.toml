@@ -4,7 +4,8 @@ title = "Lightjiao的博客"
 theme = "github-style"
 copyright = "© 2019. Theme by <a href=\"https://github.com/MeiK2333/github-style\"><span>github-style</span></a>"
 
-summaryLength = 30
+hasCJKLanguage = true
+summaryLength = 70
 
 [params]
   author = "Lightjiao"
@@ -12,11 +13,14 @@ summaryLength = 30
   github = "lightjiao"
   email = "lightjiao@gmail.com"
   avatar = "https://www.gravatar.com/avatar/099703df237acafd6c3b962721f959d7.jpg?s=200"
+  utterances = "lightjiao/lightjiao.github.io"
+  googleCSE = "012421816302566090497:mssmt7t6py4"
 
-  --facebook = "example"
-  --twitter = "example"
-  --misskey = "user profile url"
-  --mastodon = "user profile url"
-  --utterances = "example/example.github.io"
-  --url = "https://example.com"
-  --keywords = "blog, google analytics"
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+      
+[taxonomies]
+  tag = "tags"
+  archive = "archives"
