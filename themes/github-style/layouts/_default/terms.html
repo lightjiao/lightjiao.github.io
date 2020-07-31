@@ -5,8 +5,6 @@
             {{- partial "user-profile.html" . }}
             {{- if eq .Title "Tags" }}
                 {{- partial "tags.html" . }}
-            {{- else if eq .Title "Archives" }}
-                {{- partial "archives.html" . }}
             {{- end }}
     </main>
 </div>
