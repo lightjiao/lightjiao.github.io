@@ -18,4 +18,13 @@
             </div>
         </div>
     </div>
+
+    {{ if .Site.Params.utterances }}
+    <div class="utterances mt-4">
+        <script src="https://utteranc.es/client.js" repo="{{ .Site.Params.utterances }}" issue-term="pathname"
+            theme="github-light" crossorigin="anonymous" async>
+            </script>
+    </div>
+    {{ end }}
+
 </div>
