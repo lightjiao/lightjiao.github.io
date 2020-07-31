@@ -18,9 +18,6 @@
                 {{ len .Site.Taxonomies.tags }}
             </span>
         </a>
-        <a class='UnderlineNav-item mr-0 mr-md-1 mr-lg-3 {{ if hasPrefix .Path "archives" }}selected{{ end }}' href='{{ absURL "archives/" }}'>
-            Archives
-        </a>
         <a class='UnderlineNav-item mr-0 mr-md-1 mr-lg-3 {{ if eq .Path "about.md" }}selected{{ end }}' href='{{ absURL "about/" }}'>
             About
         </a>
