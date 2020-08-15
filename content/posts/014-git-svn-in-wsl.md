@@ -130,3 +130,14 @@ git svn是git的一个命令，通过这个命令，可以将远程的svn仓库c
 - git服务端可以使用[gitlab](http://gitlab.com/)（有免费版）。git强大的分支能力 + gitlab，可以大大提高code review的效率。
 
 这样应该是可以无痛的让程序团队使用git的。之所以说是理论上，是因为我所在的公司目前只提供svn，似乎没有专门的IT support团队来负责提供公司的git服务，我也懒得折腾这些，所以没有实践过。目前本地的git svn能满足我的需求就好。
+
+<br>
+
+---
+
+参考来源：
+
+- https://tonybai.com/2019/06/25/using-git-with-svn-repo/
+
+
+
