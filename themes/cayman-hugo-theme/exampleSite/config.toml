@@ -1,14 +1,14 @@
-baseURL = "https://lightjiao.github.io"
-languageCode = "zh-cn"
+baseURL = "https://example.com"
+languageCode = "en-us"
 defaultContentLanguage = "en"
-title = "Lightjiao的博客"
+title = "Cayman"
 theme = "cayman-hugo-theme"
 
 # Google analytics
 googleAnalytics = "UA-123456789-1"
 
 # Disqus comments
-# disqusShortname = "yourdiscussshortname"
+disqusShortname = "yourdiscussshortname"
 
 # Syntax highlighting
 pygmentsCodefences = true
@@ -22,8 +22,8 @@ pygmentsStyle = "pygments"
 
 [params]
   # Header text, can be markdown
-  project_name = "Lightjiao的博客"
-  project_tagline = "👨‍💻电子游戏开发者 | 🎮电子游戏爱好者 | 🏊‍♂️游泳爱好者"
+  project_name = "Cayman Hugo Theme"
+  project_tagline = "A clean, responsive Hugo theme, ported from the original Jekyll Cayman theme"
 
   # Date format for post list and single pages
   # For more date formats see https://gohugo.io/functions/format/
