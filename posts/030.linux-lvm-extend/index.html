@@ -1,0 +1,57 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=x-ua-compatible content="IE=edge"><meta name=generator content="Hugo 0.74.2"><link rel=stylesheet href=https://lightjiao.github.io/css/normalize.css><link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel=stylesheet type=text/css><link rel=stylesheet href=https://lightjiao.github.io/css/cayman.066f74f11db70a4de4e99dfcd99a63936bb29c55fd697c22b6c5f447cdb61e3a.css><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css integrity=sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js integrity=sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ crossorigin=anonymous></script><script defer src=https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body);></script><title>Linux虚拟机使用 LVM 做磁盘扩容 | Lightjiao的博客</title></head><body><section class=page-header><h1 class=project-name>Lightjiao的博客</h1><h2 class=project-tagline>👨‍💻电子游戏开发者 | 🎮电子游戏爱好者 | 🏊‍♂️游泳爱好者</h2><nav><a href=/ class=btn>Blog</a>
+<a href=/tags/ class=btn>Tags</a>
+<a href=/about/ class=btn>About</a>
+<a href=/index.xml class=btn>RSS</a></nav></section><section class=main-content><h1>Linux虚拟机使用 LVM 做磁盘扩容</h1><h2 id=vmware扩展磁盘并检查是否是lvm>Vmware扩展磁盘并检查是否是LVM</h2><blockquote><p>Ubuntu 20 默认会使用LVM</p></blockquote><p>首先在Vmware中关机，并修改设置扩展磁盘，然后开机</p><p>执行<code>sudo fdisk -l</code>查看是否扩容成功</p><pre><code>➜  ~ sudo fdisk -l
+
+... 略去其他信息 ...
+GPT PMBR size mismatch (41943039 != 419430399) will be corrected by write.
+Disk /dev/sda: 200 GiB, 214748364800 bytes, 419430400 sectors
+Disk model: VMware Virtual S
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: gpt
+Disk identifier: 85752C53-EDAD-4F99-8200-687B57E1EA3F
+
+Device       Start      End  Sectors Size Type
+/dev/sda1     2048     4095     2048   1M BIOS boot
+/dev/sda2     4096  2101247  2097152   1G Linux filesystem
+/dev/sda3  2101248 41940991 39839744  19G Linux filesystem
+
+
+Disk /dev/mapper/ubuntu--vg-ubuntu--lv: 18.102 GiB, 20396900352 bytes, 39837696 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+</code></pre><p>其中有用的信息为</p><ul><li><code>Disk /dev/sda: 200 GiB</code>：表示Vmware扩容成功</li><li><code>Disk /dev/mapper/ubuntu--vg-ubuntu--lv</code>：表示这是一个使用LVM的磁盘系统</li></ul><h2 id=操作步骤描述>操作步骤描述</h2><ul><li>在Vmware中关机，并修改设置扩展磁盘，然后开机（略）</li><li>将扩展的磁盘大小，新建为一个PhysicalVolume（PV）</li><li>将新建的PV合并到正在使用的VolumeGroup（GV）中</li><li>将LogicalVolume（LV）扩容（LV才是实际上使用到的磁盘）</li></ul><h2 id=具体操作命令以及解释>具体操作命令以及解释</h2><pre><code># 进入root
+➜  ~ sudo -i
+
+# 使用fdisk新建PV，会进入到一个交互式命令中
+➜  ~ fdisk /dev/sda
+
+</code></pre><blockquote><p>下面的代码都是 <code>fdisk /dev/sda</code> 交互式命令的内容</p></blockquote><pre><code># 输入 n，并且回车3次，将物理磁盘的剩余空间都新建为一个PV
+Command (m for help): n
+
+# 输出信息如下
+Partition number (4-128, default 4): 4
+First sector (41940992-419430366, default 41940992):
+Last sector, +/-sectors or +/-size{K,M,G,T,P} (41940992-419430366, default 419430366):
+Created a new partition 4 of type 'Linux filesystem' and of size 180 GiB.
+
+# 输入t，修改新建的PV的类型，这里需要查看一下最前面 fdisk -l 命令返回的其他的PV的磁盘类型是什么，我这里是 &quot;Linux filesystem&quot; ，于是选择了20（输入L可以逐个查看数字对应的类型）
+Command (m for help): t
+Partition number (1-4, default 4): 4
+Partition type (type L to list all types): 20
+Changed type of partition 'Linux filesystem' to 'Linux filesystem'.
+
+# 输入w，保存配置并退出
+Command (m for help): w
+The partition table has been altered.
+Syncing disks.
+</code></pre><blockquote><p>回到普通的linux shell</p></blockquote><p>（此时输入 <code>fdisk -l</code>会看到新建成功的PV <code>/dev/sda4</code>）</p><pre><code># 将新建的PV扩容到现有的VG（ubuntu-vg是我的操作系统的VG名称，按Tab会自动补全）
+➜  ~ vgextend ubuntu-vg /dev/sda4
+
+# 将LV扩容（这里是扩容到190G，也可以写 +180G）
+➜  ~ lvextend -L 190G /dev/ubuntu-vg/ubuntu-lv
+
+</code></pre><h2 id=参考文章>参考文章：</h2><ul><li><a href=https://linux.cn/article-3218-1.html>https://linux.cn/article-3218-1.html</a></li><li><a href=https://ivo-wang.github.io/2019/03/26/Ubuntu-18.04-LTS-linux-LVM-%E6%89%A9%E5%AE%B9%E6%A0%B9%E5%88%86%E5%8C%BA/>https://ivo-wang.github.io/2019/03/26/Ubuntu-18.04-LTS-linux-LVM-%E6%89%A9%E5%AE%B9%E6%A0%B9%E5%88%86%E5%8C%BA/</a></li></ul><footer class=site-footer><span class=site-footer-credits>Made with <a href=https://gohugo.io/>Hugo</a>. Themed by <a href=https://github.com/zwbetz-gh/cayman-hugo-theme>Cayman</a>. Deployed to <a href=https://www.netlify.com/>Netlify</a>.</span></footer></section><script>window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;ga('create','UA-123456789-1','auto');ga('send','pageview');</script><script async src=https://www.google-analytics.com/analytics.js></script></body></html>

@@ -1,0 +1,195 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=x-ua-compatible content="IE=edge"><meta name=generator content="Hugo 0.74.2"><link rel=stylesheet href=https://lightjiao.github.io/css/normalize.css><link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel=stylesheet type=text/css><link rel=stylesheet href=https://lightjiao.github.io/css/cayman.066f74f11db70a4de4e99dfcd99a63936bb29c55fd697c22b6c5f447cdb61e3a.css><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css integrity=sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js integrity=sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ crossorigin=anonymous></script><script defer src=https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body);></script><title>【译】 ConfigureAwait FAQ | Lightjiao的博客</title></head><body><section class=page-header><h1 class=project-name>Lightjiao的博客</h1><h2 class=project-tagline>👨‍💻电子游戏开发者 | 🎮电子游戏爱好者 | 🏊‍♂️游泳爱好者</h2><nav><a href=/ class=btn>Blog</a>
+<a href=/tags/ class=btn>Tags</a>
+<a href=/about/ class=btn>About</a>
+<a href=/index.xml class=btn>RSS</a></nav></section><section class=main-content><h1>【译】 ConfigureAwait FAQ</h1><blockquote><p>译注：</p><p>本文是翻译自<a href=https://devblogs.microsoft.com/dotnet/configureawait-faq/>Microsoft官方博客</a>，解释了<code>async/await</code>编程模型中 <code>ConfigureAwait</code>方法的细节。看完本文，能对<code>async/await</code>编程模型有更深入的了解</p></blockquote><blockquote><p>译注2：</p><p>一句话解释什么是<code>ConfigureAwait</code>：显式的指定await的callback是否回到原始上下文中执行。</p><p>用法如下：</p><pre><code>using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace cSharpSolution
+{
+        internal class Program
+        {
+            private static void Main(string[] args)
+            {
+                Task.WaitAll(ConfigureAwait());
+            }
+
+            private static async Task ConfigureAwait()
+            {
+                Console.WriteLine($&quot;main Thread id: {Thread.CurrentThread.ManagedThreadId}&quot;);
+                await PrintAsync(&quot;ConfigureAwait(true)&quot;).ConfigureAwait(true);
+                await PrintAsync(&quot;ConfigureAwait(false)&quot;).ConfigureAwait(false);
+            }
+
+            private static async Task PrintAsync(string str)
+            {
+                Console.WriteLine($&quot;{str} :await thread {Thread.CurrentThread.ManagedThreadId}&quot;);
+
+                // 有一个空的await，才会让编译器认为这个函数真的是一个异步函数，会使得ConfigureAwait的设置生效
+                // 如果没有空的await，那么整个异步调用会被编译器优化为同步调用函数，ConfigureAwait的设置不论怎么设置都不会生效
+                await Task.Run(() =&gt; { });
+            }
+        }
+}
+</code></pre><p>输出：</p><pre><code>main Thread id: 1
+ConfigureAwait(true) :await thread 1
+ConfigureAwait(false) :await thread 4
+</code></pre></blockquote><h1 id=configureawait-faq>ConfigureAwait FAQ</h1><p>七年前.NET在语言和标准库中添加了<code>async/await</code>关键字。那时候它引起了一阵热潮，不仅仅是.NET生态，无数的其他语言和框架也对它进行了模仿。在语言层面的异步构造、异步API的支持、以及<code>async/await</code>等待的基础设施进行了根本性改变后，.Net有了非常多的改进。（特别是性能和支持诊断（译注：可能是指debug的易用性）的改进）。</p><p>但是，<code>async/await</code>同时也引出了一个问题叫<code>ConfigureAwait</code>。在这篇博文中，我希望回答一些这方面的问题。希望这篇博文能成为一个通篇可读的FAQ（frequently Asked Question）列表，可以用作将来的参考。</p><p>为了真正明白<code>ConfigureAwait</code>，我们需要从比较早的内容开始&mldr;</p><h2 id=什么是synchronizationcontext>什么是<code>SynchronizationContext</code>?</h2><p><a href=https://docs.microsoft.com/en-us/dotnet/api/system.threading.synchronizationcontext><code>System.Threading.SynchronizationContext</code>文档</a>说 “提供用于在各种同步模型中传播同步context的基本功能”，这显然不是一个容易理解的描述。</p><p>在99.9%的使用场景，<code>SynchronizationContext</code>仅仅是提供了一个 virtual <code>Post</code> 方法，这个方法接受一个delegate以异步的方式执行（还有其他的virtual方法，但它们不常用而且与这次讨论无关）。基类中的<code>Post</code>方法实际上是调用<code>ThreadPool.QueueUserWorkItem</code>去异步的执行delegate。然而派生类可以override <code>Post</code>方法使得这个delegate在更合适的地方和更合适的时间执行。</p><p>比如说，Windows Forms有一个<a href=https://github.com/dotnet/winforms/blob/94ce4a2e52bf5d0d07d3d067297d60c8a17dc6b4/src/System.Windows.Forms/src/System/Windows/Forms/WindowsFormsSynchronizationContext.cs><code>SynchronizationContext</code>派生类</a>，它override了<code>Post</code>方法使得等同于<code>Control.BeginInvoke</code>，这样一来传入<code>Post</code>方法的delegate，都将异步的在与Control相关联的线程调用（也就是UI线程）。Windows Forms依赖win32消息处理，UI线程有一个简单的一直等待新消息去处理的“消息死循环”。这些消息可以是鼠标的移动和点击、可以是键盘输入、可以是系统时间、可以是可调用的委托等等。所以给Windows Forms应用的UI线程一个<code>SynchronizationContext</code>实例，当需要在UI线程上执行一个delegate时，只需要调用<code>Post</code>方法传入这个delegate就好了。</p><blockquote><p>译注：</p><p>这里并不是说在UI上异步的执行一个delegate，而是把一个delegate通过<code>SynchronizationContext</code>传递到UI线程去执行。</p></blockquote><p>这样的例子在WPF（Windows Presentation Foundation）上也有。它有自己的<a href=https://github.com/dotnet/wpf/blob/ac9d1b7a6b0ee7c44fd2875a1174b820b3940619/src/Microsoft.DotNet.Wpf/src/WindowsBase/System/Windows/Threading/DispatcherSynchronizationContext.cs><code>SynchronizationContext</code>派生类</a>，重写了<code>Post</code>方法将delegate“封送到”UI线程上执行（通过<code>Dispatcher.BeginInvoke</code>），只是在这种情况下，由WPF Dispatcher而不是Windows Forms Control管理。</p><p>再就是WinRT（Windows Run Time）。它有自己的 <a href=https://github.com/dotnet/runtime/blob/60d1224ddd68d8ac0320f439bb60ac1f0e9cdb27/src/libraries/System.Runtime.WindowsRuntime/src/System/Threading/WindowsRuntimeSynchronizationContext.cs><code>SynchronizationContext</code>派生类</a> 重写 <code>Post</code> 方法，通过<code>CoreDispatcher</code>将delegate排队到在UI线程上。</p><p>事实上，<code>SynchronizationContext.Post()</code>的行为目的已经超出了”在UI线程上运行一个delegate”的范畴。任何人都可以实现<code>SynchronizationContext</code>的<code>Post</code>方法做任何事。比如，我也许并不关心delegate运行在哪个线程上，但我希望<code>Post</code>到我的<code>SynchronizationContext</code>的任何委托都以一定程度的并发度执行。我可以自定义一个下面这样的<code>SynchronizationContext</code>做到这些：</p><pre><code>// 实现一个支持一定程度并发指定的执行delegate
+internal class MaxConcurrencySynchronizationContext : SynchronizationContext
+{
+    private readonly SemaphoreSlim _semaphore;
+
+    public MaxConcurrencySynchronizationContext(int maxConcurrencyLevel)
+    {
+        _semaphore = new SemaphoreSlim(maxConcurrencyLevel);
+    }
+
+    public override void Post(SendOrPostCallback d, object state)
+    {
+        _semaphore.WaitAsync().ContinueWith(delegate
+        {
+            try { d(state); } finally { _semaphore.Release(); }
+        },
+        default, TaskContinuationOptions.None, TaskScheduler.Default);
+    }
+
+    public override void Send(SendOrPostCallback d, object state)
+    {
+        _semaphore.Wait();
+        try { d(state); } finally { _semaphore.Release(); }
+    }
+}
+</code></pre><p>其实，单元测试框架xunit <a href=https://github.com/xunit/xunit/blob/d81613bf752bb4b8774e9d4e77b2b62133b0d333/src/xunit.execution/Sdk/MaxConcurrencySyncContext.cs>提供的<code>SynchronizationContext</code></a>就与这个非常相像，它用于限制测试用例的并发执行。</p><p>上面的这些例子其实都是一种对<code>SynchronizationContext</code>的抽象，这与我们常见的抽象带来的好处是一样的：它提供了一个API，可用于将delegate排队，创建者可以用他希望的方式实现，调用者不用了解该实现的细节。所以如果我正在编写一个库，希望能执行一些工作后，将delegate排队回到原始的context，我只需要获取调用者的<code>SynchronizationContext</code>，当我做完我的工作的时候，在那个context调用<code>Post</code>即可移交我需要调用的delegate。我不需要知道对windows窗口去获取<code>Control</code>调用哪个<code>BeginInvoke</code>，或者对WPF来说获取<code>Dispatcher</code>并且调用<code>BeginInvoke</code>，或者对xunit来说我或许应该引入它的context并且排队；我只需要简单的获取<code>SynchronizationContext</code>并且在之后使用它即可。</p><p>为此，<code>SynchronizationContext</code>提供了一个<code>Current</code>属性，以便实现上述目标，代码可能长这样：</p><pre><code>public void DoWork(Action worker, Action completion)
+{
+    SynchronizationContext sc = SynchronizationContext.Current;
+    ThreadPool.QueueUserWorkItem( _ =&gt; 
+        {
+        	try {worker();}
+            finally {sc.Post( _ =&gt; completion(), null ); }
+    	}
+    );
+}
+</code></pre><p>如果你写的是一个框架，想要通过Current属性来暴露自定义的上下文，可以使用<code>SynchronizationContext.SetSynchronizationContext()</code>方法。</p><h2 id=什么是taskscheduler>什么是<code>TaskScheduler</code>?</h2><p><code>SynchronizationContext</code>是对“scheduler”的通用抽象。一些第三方框架有时候有它自己对“scheduler”的抽象，<code>System.Threading.Tasks</code>也做了对"scheduler"的抽象。当<code>Tasks</code>包含可以排队和执行的delegate的时候，它就与<code>System.Threading.Tasks.TaskScheduler</code>相关联。像<code>SynchronizationContext</code>提供一个virtual <code>Post</code>的方法用于排队delegate的调用一样，<code>TaskScheduler</code>提供一个abstract <code>QueueTask</code>方法（通过<code>ExecuteTask</code>方法来延迟执行<code>Task</code>）。</p><p><code>TaskScheduler.Default</code>默认返回的scheduler是线程池，但可以通过派生<code>TaskScheduler</code>并且重写相关的方法来改变Task何时何处被执行的行为。比如包括<code>System.Threading.Tasks.ConcurrentExclusiveSchedulerPair</code>在内的核心库都有这种实现。这个类的实例有两个<code>TaskScheduler</code>属性，一个<code>ExclusiveScheduler</code>，一个<code>ConcurrentScheduler</code>。在<code>ConcurrentScheduler</code>中调度的<code>Task</code>可能会被并发的调用，但受<code>ConcurrentExclusiveSchedulerPair</code>参数的限制（构造函数的时候提供），而且在<code>ExclusiveScheduler</code>中的<code>Task</code>运行的时候<code>ConcurrentScheduler</code>中的<code>Task</code>则不会执行，<code>ExclusiveScheduler</code>一次只允许一个<code>Task</code>运行。这样，<code>ConcurrentExclusiveSchedulerPair</code>的行为很像一个读写锁。</p><p>像<code>SynchronizationContext</code>那样，<code>TaskScheduler</code>也有一个<code>Current</code>属性，用于返回“当前的” <code>TaskScheduler</code>。而不像<code>SynchronizationContext</code>的，没有方法支持set当前的scheduler。相反，当前的scheduler是与当前运行的Task相关联的scheduler，并且scheduler作为启动Task的一部分提供给系统。举个例子，下面的程序将输出“ True”，因为<code>StartNew</code>中执行的lambda是在<code>ConcurrentExclusiveSchedulerPair</code>的<code>ExclusiveScheduler</code>上执行的，并且访问到的<code>TaskScheduler.Current</code>就是正在执行的那个scheduler：</p><pre><code>using System;
+using System.Threading.Tasks;
+
+class Program
+{
+    static void Main()
+    {
+        var cesp = new ConcurrentExclusiveSchedulerPair();
+        Task.Factory.StartNew(
+            () =&gt; {
+                Console.WriteLine(TaskScheduler.Current == cesp.ExclusiveScheduler);
+            },
+            default,
+            TaskCreationOptions.None, cesp.ExclusiveScheduler
+        ).Wait();
+    }
+}
+</code></pre><p>有趣的是，<code>TaskScheduler</code>提供了一个静态的<code>FromCurrentSynchronizationContext()</code>方法，会返回一个与<code>SynchronizationContext.Current</code>相关联的新的<code>TaskScheduler</code>，这样可以使得一个Task在<code>SynchronizationContext.Current</code>的context中运行了。</p><h2 id=那么synchronizationcontext-和-taskscheduler-与-await-有什么关系呢>那么，<code>SynchronizationContext</code> 和 <code>TaskScheduler</code> 与 <code>await</code> 有什么关系呢？</h2><p>试想一下你在写一个带有<code>Button</code>的UI 应用。点击<code>Button</code>后，我们希望从web上下载一些文本，并且将文本设置成为<code>Button</code>的内容。<code>Button</code>应当只允许被拥有它的的UI线程访问，因此，当我们成功下载新的文本并将其存储回<code>Button</code>的内容时，我们需要从拥有<code>Button</code>的线程中进行操作。如果不这样做，则会出现类似以下的异常：</p><pre><code>System.InvalidOperationException: 'The calling thread cannot access this object because a different thread owns it.'
+</code></pre><p>如果我们手动写这些实现，我们可以用最开始提到的<code>SynchronizationContext</code>将下载下来的文本设置回原始context。</p><p>利用<code>TaskScheduler</code>来写可以这样写：</p><blockquote><p>译注：</p><p>这里的例子其实是一个Window Form程序，用Visual Studio创建一个Windows Form程序即可很方便的写出Button相关的代码</p></blockquote><pre><code>private static readonly HttpClient s_httpClient = new HttpClient();
+
+private void downloadBtn_Click(object sender, RoutedEventArgs e)
+{ 
+    s_httpClient.GetStringAsync(&quot;http://example.com/currenttime&quot;).ContinueWith(downloadTask =&gt;
+    {
+        downloadBtn.Content = downloadTask.Result;
+    }, TaskScheduler.FromCurrentSynchronizationContext());
+}
+</code></pre><p>或者直接用<code>SynchronizationContext</code>，可以这样写：</p><pre><code>private static readonly HttpClient s_httpClient = new HttpClient();
+
+private void downloadBtn_Click(object sender, RoutedEventArgs e)
+{
+    SynchronizationContext sc = SynchronizationContext.Current;
+    s_httpClient.GetStringAsync(&quot;http://example.com/currenttime&quot;).ContinueWith(downloadTask =&gt;
+    {
+        sc.Post(delegate
+        {
+            downloadBtn.Content = downloadTask.Result;
+        }, null);
+    });
+}
+</code></pre><p>但是，这两种写法都明确使用了回调（callback），我们可以用<code>async/await</code> 写出更优雅的代码：</p><pre><code>private static readonly HttpClient s_httpClient = new HttpClient();
+
+private async void downloadBtn_Click(object sender, RoutedEventArgs e)
+{
+    var awaitable = s_httpClient.GetStringAsync(&quot;http://example.com/currenttime&quot;);
+    var text = await awaitable;
+    downloadBtn.Content = text;
+}
+</code></pre><p>这“就行了”，成功地在UI线程上设置了Content，因为与上述手动实现的版本一样，<code>await Task</code>在默认情况下关注<code>SynchronizationContext.Current</code>以及<code>TaskScheduler.Current</code>。</p><p>❗❗❗当您在C＃中<code>await</code>时，编译器会把代码翻译成：先向 &ldquo;awaitable&rdquo; 询问获取 &ldquo;awaiter&rdquo; （<code>awaitable.GetAwaiter()</code>），&ldquo;awaiter"负责挂接一个回调函数（就像那个<code>ContinueWith()</code>函数），回调函数在被await的对象执行结束时会回调到原来的状态机中（通过在回调函数注册时捕获到的context或scheduler来实现）。</p><blockquote><p>译注：具体说明点击按钮展示内容的例子：</p><p><code>await</code>的时候通过执行<code>Task&lt;TResult></code>（也即"awaitable&rdquo;）的成员方法<code>GetAwaiter()</code>获取一个<code>TaskAwaiter&lt;TResult></code>（也即"awaiter&rdquo;），<code>TaskAwaiter</code>会捕获当前的context或者scheduler，而且会把await关键字后面的代码视为回调函数，转成以<code>Continuewith()</code>函数里的那样来“挂接”回调函数。</p></blockquote><p>虽然实际上的代码不完全相同（还进行了其他优化和调整），但翻译后的代码看起来会是这样的：</p><pre><code>var scheduler = SynchronizationContext.Current;
+if (scheduler is null &amp;&amp; TaskScheduler.Current != TaskScheduler.Default)
+{
+    scheduler = TaskScheduler.Current;
+}
+</code></pre><p>也就是说，它首先检查是否设置了<code>SynchronizationContext</code>，如果没有，则判断在运行中是否存在非默认的<code>TaskScheduler</code>。</p><p>如果找到了上面的其中一个，则在执行回调（callback）时候使用获取到的scheduler（译注：也就是可以通过这种方式切换回去原始上下文中执行）；否则，它只是在执行完Task的上下文中执行回调。</p><h2 id=所以configureawaitfalse-做了什么>所以，<code>ConfigureAwait(false)</code> 做了什么？</h2><p><code>ConfigureAwait</code>方法并不特殊：编译器或者运行时都不能用特殊的方式去识别它。它只是返回一个结构体（<code>ConfiguredTaskAwaitable</code>），包含了原始的Task和一个指定的布尔值。毕竟<code>await</code>可以与任何实现了”awaitable接口“的类型搭配使用。</p><blockquote><p>译注：</p><p>实际上并没有一个真实存在的<code>interface awaitable {}</code>，原文是说”暴露了符合条件的方法的类型“，为了翻译流畅，这里翻译成”awaitable接口“并打引号，下文同。</p></blockquote><p>通过返回不同的类型，意味着编译器访问<code>"awaitable".GetAwaiter</code>方法，是通过<code>ConfigureAwait()</code>返回的类型访问，而不是直接的通过Task访问，并且提供一个钩子（hook）来改变<code>await</code>在这个"awaiter"上的行为。</p><p>具体的说，<code>ConfigureAwait(continueOnCapturedContext: false)</code>的返回类型和<code>Task</code>返回的类型直接的影响了如何获取上下文的逻辑。我们前面说的逻辑会变成大概这样：</p><pre><code>object scheduler = null;
+if (continueOnCapturedContext)
+{
+    scheduler = SynchronizationContext.Current;
+    if (scheduler is null &amp;&amp; TaskScheduler.Current != TaskScheduler.Default)
+    {
+        scheduler = TaskScheduler.Current;
+    }
+}
+</code></pre><p>换句话说，通过指定<code>false</code>，即使指定了执行回调的上下文，但运行时会假装没有……</p><h2 id=我为什么想要用configureawaitfalse>我为什么想要用<code>ConfigureAwait(false)</code>?</h2><p><code>ConfigureAwait(continueOnCapturedContext: false)</code>用于强行避免回调会被在原始的上下文中执行。会有这样的一些好处：</p><ul><li><p>提升性能：</p><p>比起直接执行回调函数，将回调函数排队是有开销的，因为它有额外的工作包含了进来（通常是额外的内存分配），而且这意味着一些特定的运行时性能优化不能使用（当我们确切的知道回调将如何调用时，我们可以进行更多优化，但是如果将它移交给抽象的排队实现，我们会有些受到限制）。最常见的，仅仅是检查当前<code>SynchronizationContext</code>和当前<code>TaskScheduler</code>的额外开销也都是肉眼可见的。</p><p>如果<code>await</code>后面的代码实际上并没有一定要求在原始上下文中运行，使用<code>ConfigureAwait(false)</code>能减少这些开销：</p><ul><li>不需要做不必要的排队</li><li>可以尽可能的做性能优化（由于不排队，那么执行时机是可控的）</li><li>减少不必要的线程静态访问（thread static accesses）（译注：什么是线程静态访问？）</li></ul></li><li><p>避免死锁：</p><p>想象一下一个库的方法使用<code>await</code>来获取网络下载的结果。你执行了这个方法，并且同步的阻塞等待它执行结束，比如通过对返回的<code>Task</code>对象调用<code>.Wait()</code>或者 <code>.Result</code>或者 <code>.GetAwaiter().GetResult()</code> 。现在考虑一下，如果当前的<code>SynchronizationContext</code>限制了最大数量为1会发生什么（不论是通过前面提到的设置<code>MaxConcurrencySynchronizationContext</code>的手段，还是说它是只有一个线程可用的上下文——比如UI线程）。</p><p>你在这个线程上执行了一个方法并且同步阻塞的等待它执行结束，这个操作启动网络下载并且等待它。由于默认情况下，awaiting 的 Task 将捕获当前的<code>SynchronizationContext</code>，并且当网络下载完成时，它将会排队回到<code>SynchronizationContext</code>执行回调完成剩下的操作。但唯一能够处理回调队列的线程又被你的代码阻塞等待着操作执行结束。而这个操作要等到回调执行被队列处理掉才会结束。</p><p>啪，这就死锁了！这种情况不只是会出现在上下文数量限制为1的情况，只要资源的数量是有限制的，就都会发生。想象一下相同的场景，用<code>MaxConcurrencySynchronizationContext</code>将上下文的数量限制为 4 除外。我们的操作不只是执行一次调用，而是排队4个回调给到原始上下文，每一个回调都要求阻塞的等待结束。我们现在依然阻塞了所有的资源去等待异步的方法完成。</p><p>如果将这个库中的方法使用<code>ConfigureAwait(false)</code>，它就不会将回调函数进行排队回到原始上下文，会避免死锁的场景。</p></li></ul><h2 id=我为什么想用configureawaittrue>我为什么想用<code>ConfigureAwait(true)</code>?</h2><p>不，你不想！除非你纯粹将其用作表明你有意不使用<code>ConfigureAwait(false)</code>（比如避免静态分析产生警告）。</p><p><code>ConfigureAwait(true)</code>没有意义。使用<code>await task</code>和<code>await task.ConfigureAwait(true)</code>完全一样。如果你在生产环境看到<code>ConfigureAwait(true)</code>的代码，你可以直接删了它并且不会有负面的影响。</p><p><code>ConfigureAwait</code>方法接受布尔值入参，是因为某些特殊情况下，你需要传递变量来控制配置。但99%的用例带有硬编码的<code>false</code>入参<code>ConfigureAwait(false)</code>。</p><h2 id=什么时候应该用configureawaitfalse>什么时候应该用<code>ConfigureAwait(false)</code>？</h2><p>这取决于：你是在写应用级别的代码，还是通用库的代码。</p><p>当写的是应用程序的代码时，一般情况下使用默认行为就好了（即<code>ConfigureAwait(true)</code>）。</p><p>如果一个应用模型/环境开放发布了自定义的<code>SynchronizationContext</code>（比如Windows Form、WPF、ASP.NET Core 等等），几乎可以确定，它代表了这样的含义：对那些需要关心上下文的代码逻辑提供了一种友好的交互方式。</p><p>所以如果你是在Windows Form 应用程序里写事件处理、或者在XUnit中写单元测试、或者在APS.NET MVC的Controller中写代码，不管上述这些应用程序是否提供了一种<code>SynchronizationContext</code>，只要存在<code>SynchronizationContext</code>你都会想要使用它。这种行为的含义就是你打算使用默认行为（即<code>ConfigureAwait(true)</code>）。你可以简单的使用<code>await</code>，如果原始上下文存在，那么回调函数会正确的Post回到原始的上下文执行。</p><p>这些都指向那个一般性使用原则：如果你写的是应用级别代码，不要使用<code>ConfigureAwait(false)</code>。如果你回顾一下这篇博文前面部分的事件点击代码：</p><pre><code>private static readonly HttpClient s_httpClient = new HttpClient();
+
+private async void downloadBtn_Click(object sender, RoutedEventArgs e)
+{
+    var awaitable = s_httpClient.GetStringAsync(&quot;http://www.baidu.com&quot;);
+    var text = await awaitable;
+    downloadBtn.Content = text;
+}
+</code></pre><p>那一行<code>downloadBtn.Content = text;</code>是需要回到原始的上下文执行（译注：原始拥有这个Button变量的线程）。如果代码里强行违反我们上面提到的一般性原则，强行在代码里指定<code>ConfigureAwait(false)</code>：</p><pre><code>private static readonly HttpClient s_httpClient = new HttpClient();
+
+private async void downloadBtn_Click(object sender, RoutedEventArgs e)
+{
+    var awaitable = s_httpClient.GetStringAsync(&quot;http://www.baidu.com&quot;);
+    var configureAwaitable = awaitable.ConfigureAwait(false); // BUG
+    var text = await configureAwaitable;
+    downloadBtn.Content = text;
+}
+</code></pre><p>这会引发BUG。</p><p>在传统的ASP.NET应用程序中依赖<code>HttpContext.Current</code>使用<code>ConfigureAwait(false)</code>，然后再继续使用<code>HttpContext.Current</code>同样会引发这样的BUG。</p><p>相比之下，通用库是“通用库”，部分原因是它们不关心使用它们的环境。可以在web app、客户端app、或者是一个测试库中使用它们，都行，因为这些库与使用它们的应用程序环境没什么关系。因为与应用程序没什么关系所以意味着它也不需要用某种特殊的方式来与应用程序产生交互，比如不会访问UI的控制，因为通用库对访问UI的控制know nothing。那么由于不需要在特定的上下文中运行代码，所以也就不用考虑强行把回调函数返回到原始的上下文中执行，也就是说我们可以使用<code>ConfigureAwait(false)</code>，同时这样也能获得更好的性能和可靠性（译注：不用排队提升性能，避免死锁提高可靠性）。</p><p>这同样指向那个一般性原则：如果你写的代码是通用库代码，那么请使用<code>ConfigureAwait(false)</code>。这也是为什么，在.NET Core runtime 库中的每一个 <code>await</code>都用到了<code>ConfigureAwait(false)</code>；只有一小部分例外，甚至有可能那也是一个忘了写<code>ConfigureAwait(false)</code>的BUG，比如<a href=https://github.com/dotnet/corefx/pull/38610>这个PR</a>就修复了一个这样的BUG。</p><p>当然，与所有的一般性原则一样，在某些情况下是会有例外的。比如有一种比较多的情况是在通用库代码的API接受一个delegate去执行的时候。在这种情况下，库的调用者传递了一段可能是应用级的代码，这使得通用库的“通用”假设变得没有意义。比如LINQ的 <code>Where</code>方法的异步版本：</p><pre><code>public static async IAsyncEnumerable&lt;T&gt; WhereAsync(this IAsyncEnumerable&lt;T&gt; source, Func&lt;T, bool&gt; predicate)
+</code></pre><p>这里的<code>predicate</code>需不需要返回到调用者原始的上下文去执行呢？其实这要看<code>WhereAsync</code>的实现是怎样的，这也是它选择不使用<code>ConfigureAwait(fase)</code>的原因。</p><p>尽管有这些特殊情况，但一般性使用原则还是：如果你在写通用库或者是与应用无关的代码，则使用<code>ConfigureAwait(false)</code>，否则不要这样做。</p><h2 id=configureawaitfalse保证回调函数一定不会返回到原始上下文中执行吗><code>ConfigureAwait(false)</code>保证回调函数一定不会返回到原始上下文中执行吗？</h2><p>不。它只保证不会往原始上下文那里排队，但不意味着<code>await task.ConfigureAwait(false)</code>之后的代码一定不会跑在原始上下文。这是因为<code>await</code>一个已经结束的"awaitable"对象只会同步的继续执行，而不会强行的让任何东西往回排队。所以如果<code>await</code>一个已经完成的<code>task</code>，不管是否使用了<code>ConfigureAwait(false)</code>，之后的代码只会继续在当前线程执行，不管上下文还是不是当前上下文。</p><h2 id=只在方法中的第一个await时使用configureawaitfalse后面的await不使用这样可以吗>只在方法中的第一个<code>await</code>时使用<code>ConfigureAwait(false)</code>，后面的<code>await</code>不使用，这样可以吗？</h2><p>一般情况下，不行。看一下上一条FAQ。如果<code>await task.ConfigureAwait(false)</code>执行的是一个已经完成的task（在它await的时间内，并且这其实挺常见的），那么<code>ConfigureAwait(false)</code>将会变得没有意义，因为当前线程会继续执行后续得代码，并且上下文是一样的。</p><p>有一个明显的的特殊情况是这样：你确切的知道第一个<code>await</code>会被异步的完成，同时被await的对象将不会在用户自定义的<code>SynchronizationContext</code>或<code>TaskScheduler</code>的环境中执行其回调。</p><p>比如.NET runtime库<code>CryptoStream</code>希望确保这段潜在的CPU计算密集型代码不成为调用者同步调用的一部分，所以它使用了一个<a href=https://github.com/dotnet/runtime/blob/4f9ae42d861fcb4be2fcd5d3d55d5f227d30e723/src/libraries/System.Security.Cryptography.Primitives/src/System/Security/Cryptography/CryptoStream.cs#L205>自定义awaiter</a>确保在第一个<code>await</code>之后的代码都在线程池中的线程上运行。然鹅，尽管是这种情况，你依然会看到下一个<code>await</code>依然使用了<code>ConfigureAwait(false)</code>；技术上来说这其实没必要，但它会使得code review变得更简单，因为这样的话每次其他人看到这段代码不需要去分析为什么这里会少一个<code>ConfigureAwait(false)</code>。</p><h2 id=我可用taskrun来避免使用configureawaitfalse吗>我可用<code>Task.Run()</code>来避免使用<code>ConfigureAwait(false)</code>吗？</h2><p>可以的。如果你这样写：</p><pre><code>Task.Run(async delegate
+{
+	await SomethingAsync(); // won't see the orign context 
+})
+</code></pre><p>那么在<code>SomethingAsync()</code>上写<code>ConfigureAwait(false)</code>则没有效果，因为传递给<code>Task.Run</code>的委托函数会在线程池线程中执行（堆栈上没有优先级更高的代码，因此<code>SynchronizationContext.Current</code>会返回null）。此外，<code>Task.Run</code>隐式的使用<code>TaskScheduler.Default</code>这意味着在这个delegate函数内部访问<code>TaskScheduler.Current</code>也会返回<code>Default</code>。意味着不论是否使用<code>ConfigureAwait(false)</code>，<code>awiat</code>表现出来的行为将会一样。</p><blockquote><p>译注：<code>ConfigureAwait(false)</code>的作用就是忽略current 的 context或scheduler，直接访问default。但因为<code>Task.Run()</code>隐式的设置了scheduler为default，所以指不指定<code>ConfigureAwait(false)</code>没区别。</p></blockquote><p>但这也并不是说一定是这样。如果你的代码是这样：</p><pre><code>Task.Run(async delegate
+{
+    SynchronizationContext.SetSynchronizationContext(new SomeCoolSyncCtx());
+    await SomethingAsync(); // will target SomeCoolSyncCtx
+});
+</code></pre><p>那么<code>SomethingAsync()</code>内部的代码获取<code>SynchronizationContext.Current</code>会是那个<code>SomeCoolSyncCtx</code>实例，并且这个<code>await</code>和<code>SomeThingAsync()</code>中没有指定<code>ConfigureAwait(false)</code>的await都会被post回来到这个实例。只是使用这样的写法时，你需要知道往原始上下文排队会做什么、不会做什么，以及它的行为是否会阻碍你。</p><p>这种写法会带来对其他任务对象的创建或者排队的代价。这取决于你对性能是否敏感，也许对你的应用程序或者库而言无关紧要。</p><p>另外请注意，这种trick可能会带来一些问题并引发意想不到的后果。比如，你已经用静态分析工具（e.g. Roslyn analyzers）来标记没有使用<code>ConfigureAwait(false)</code>的<code>await</code>，像是<a href="https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2007?view=vs-2019">CA2007</a>。如果启用了这样的分析标记，但是又使用这个trick来避免使用<code>ConfigureAwait(false)</code>，静态分析工具依然会标记这个，这反而给你带来了更多冗余的工作。也许您会因为觉得告警很烦所以禁用了这个代码分析选项，但这样的话您就在代码中错过了那些本应该使用<code>ConfigureAwait(false)</code>的地方。</p><h2 id=我可以使用synchronizationcontextsetsynchronizationcontext来避免使用configureawaitfalse吗>我可以使用<code>SynchronizationContext.SetSynchronizationContext</code>来避免使用<code>ConfigureAwait(false)</code>吗？</h2><p>不行。好吧，或许也行，这取决于你的代码是什么样子的。</p><p>一些开发者会写类似这样的代码：</p><pre><code>Tast t;
+var old = SynchronizationContext.Current;
+SynchronizationContext.SetSynchronizationContext(null);
+try
+{
+	t = CallCodeThatUseAwaitAsync(); // awaits in here won't see the original context
+}
+finally
+{
+	SynchronizationContext.SetSynchronizationContext(old);
+}
+await t; // will still target the orignal context
+</code></pre><p>希望<code>CallCodeThatUseAwaitAsync()</code>里面的代码访问到的当前上下文是<code>null</code>。而且这确实会。然鹅，这不会影响<code>await</code>访问到的<code>TaskScheduler.Current</code>的代码，所以如果这个代码是运行在某个自定义的<code>TaskScheduler</code>中，那么在<code>CallCodeThatUseAwaitAsync()</code>内部的<code>await</code>（没有使用<code>ConfigureAwait(false)</code>的那些）依然会访问并且排队回到那个自定义的<code>TaskScheduler</code>。</p><p>这里有一些注意事项（同样也适用于前一个关于<code>Task.Run</code>的FAQ）：这种解决方法会带来一些性能方面的影响。不过<code>try</code>当中的代码也可以通过设置不同的上下文来阻止这种事情发生（或者在非默认的<code>TaskScheduler</code>中执行）。</p><p>对于这样的用法，也要注意一些细微的区别：</p><pre><code>var old = SynchronizationContext.Current;
+SynchronizationContext.SetSynchronizationContext(null);
+try
+{
+	await CallCodeThatUsesAwaitAsync();
+}
+finally
+{
+	SynchronizationContext.SetSynchronizationContext(old);
+}
+</code></pre><p>看到区别没有？虽然区别很小，但十分重要。这里没有办法保证将回调函数会回到原始线程执行，意思是<code>SynchronizationContext</code>的重置回原始上下文可能并没有真的发生在原始线程中，这可能会导致该线程上的任务访问到错误的上下文（为了解决这个问题，好的应用程序模型通常会设置自定义上下文，通常会在调用其他用户代码之前多添加一些代码手动重置它）。而且即使这些都发生在同一个线程，也可能会被阻塞一小会儿，这样一来上下文就不会被合适的恢复。如果运行在不同的线程，可能最终会在该线程上设置错误的上下文。等等。非常不理想。</p><h2 id=我使用了getawaitergetresult我还需要使用configureawaitfalse吗>我使用了<code>GetAwaiter().GetResult()</code>，我还需要使用<code>ConfigureAwait(false)</code>吗？</h2><blockquote><p>译注：使用方法如下</p><pre><code>var result = Task.GetAwaiter().GetResult();
+var anotherResult = Task.ConfigureAwait(false).GetAwaiter().GetResult();
+</code></pre></blockquote><p>不需要。</p><p><code>ConfigureAwait(false)</code>只会影响callback。具体而言"awaiter"模式要求"awaiter"暴露<code>IsCompleted</code>属性、<code>GetResult()</code>方法和<code>OnCompleted()</code>方法（可选的暴露<code>UnsafeOnCompleted()</code>方法）。<code>CongifureAwait()</code>只会影响<code>{Unsafe}OnCompleted()</code>的行为，所以如果直接访问<code>GetResult()</code>方法，不论是对<code>TaskAwaiter</code>访问的还是对<code>ConfiguredTaskAwaitable.ConfiguredTaskAwaiter</code>访问，都没区别。</p><p>所以，如果看到<code>task.ConfigureAwait(false).GetAwaiter().GetResult()</code>这样的代码，你可以直接删掉<code>ConfigureAwait(false)</code>（或者想一下你是否真的想这样阻塞调用）。</p><h2 id=我知道我运行的环境里永远不会有自定义的synchronizationcontext或者自定义的taskscheduler我可以跳过不使用configureawaitfalse吗>我知道我运行的环境里永远不会有自定义的<code>SynchronizationContext</code>或者自定义的<code>TaskScheduler</code>，我可以跳过不使用<code>ConfigureAwait(false)</code>吗？</h2><p>也许可以。这看你对 “永远不会” 有多大的把握。</p><p>就像前面的FAQ中说的，尽管你工作的应用程序模型虽然不会有，但不意味着其他人不会或者其他的库不会。所你需要确保这种情况不会发生，或者至少认识到这样做的可能的风险。</p><h2 id=我听说configureawaitfalse在net-core中已经不再需要了是真的吗>我听说<code>ConfigureAwait(false)</code>在.NET Core中已经不再需要了，是真的吗？</h2><p>假的。和在.NET Framework中运行需要它一样，.NET Core中也需要它。这方面没有变化。</p><p>有变化的部分是，取决于那个环境是否发布了自己的<code>SynchronizationContext</code>。特别是，尽管.NET Framework上的经典ASP.NET具有其<a href=https://github.com/microsoft/referencesource/blob/3b1eaf5203992df69de44c783a3eda37d3d4cd10/System.Web/AspNetSynchronizationContextBase.cs>自己的SynchronizationContext</a>，但是ASP.NET Core却还没有。这意味着默认情况下，在ASP.NET Core应用程序中运行的代码不会看到自定义的<code>SynchronizationContext</code>，从而减少了在这种环境中运行<code>ConfigureAwait(false)</code>的需要。</p><p>但这不意味着，永远不会出现自定义的<code>SynchronizationContext</code> or <code>TaskScheduler</code>。因为一些第三方库或者其他开发者的代码可能会通过设置自定义的context或者scheduler调用了你的代码，这种情况下，即使是在ASP.NET Core中的await的代码，你的代码依然可能会访问到非默认的context或者scheduler（这种情况你可能会开始想要使用<code>ConfigureAwait(false)</code>了（译注：这样可以保证自己await的代码访问到的context/shceduler至少不是第三方库所设置的那个））。</p><p>当然这种情况，如果你是为了避免同步阻塞（比如在web app中是需要避免这种事情发生的），而且你并不介意这种情况下一些小的性能开销，那么可以不用使用<code>ConfigureAwait(false)</code>。</p><h2 id=我可以在-await-foreach-一个iasyncenumerable-时使用configureawaitfalse-吗>我可以在 <code>await foreach</code> 一个<code>IAsyncEnumerable</code> 时使用<code>ConfigureAwait(false)</code> 吗？</h2><blockquote><p>译注，首先我们介绍一下<code>IEnumerable</code>：</p><p><code>IEnumerable&lt;T></code>支持自定义返回一个可迭代的对象</p><p><code>IEnumerator&lt;T></code>是<code>IEnumerable&lt;T>.GetEnumerator()</code> 返回的，可以自己手动的迭代这个迭代器</p><p>有一个关于这两个的类比，<code>IEnumetable&lt;T></code>好比是数据库中的table，<code>IEnumerator&lt;T></code>好比是这个table的cursor。你可以询问table返回一个cursor，也可以对同一个table同时使用多个cursor。</p></blockquote><blockquote><p>译注2，那么我们来看一下什么是<code>IAsyncEnumerable</code>：</p><pre><code>...
+</code></pre></blockquote><blockquote><p>这个FAQ没看懂，待重新整理</p></blockquote><p>可以。可以看一下这个例子：<a href=https://docs.microsoft.com/en-us/archive/msdn-magazine/2019/november/csharp-iterating-with-async-enumerables-in-csharp-8>[C#] Iterating with Async Enumerables in C# 8</a>。</p><p><code>await foreach</code>绑定到了一种模式，以达到可以用于遍历<code>IAsyncEnumerable&lt;T></code>，它也可以用于遍历任意暴露了符合条件的API的对象。</p><p>.NET runtime库对<code>IAsyncEnumerable&lt;T></code>实现了一个<a href=https://github.com/dotnet/runtime/blob/91a717450bf5faa44d9295c01f4204dc5010e95c/src/libraries/System.Private.CoreLib/src/System/Threading/Tasks/TaskAsyncEnumerableExtensions.cs#L25-L26><code>ConfigureAwait&lt;T></code>扩展方法</a>，返回一个暴露符合条件API的自定义类型。当调用<code>MoveNextAsync()</code>和<code>DisposeAsync()</code>时，这些调用会被返回到设置的enumerator struct类型，它依次以所需的配置方式执行<code>await</code>。</p><h2 id=当await-using-iasyncdisposable时可以使用configureawait吗>当<code>await using IAsyncDisposable</code>时可以使用<code>ConfigureAwait</code>吗？</h2><p>可以，虽然有一个小的问题。</p><p>像上一个FAQ中<code>IAsyncEnumerable&lt;T></code>描述的那样，.NET runtime库对<code>IAsyncDisposable</code>实现了一个<code>ConfigureAwait</code>扩展方法，<code>await using</code>能在这个上面正常的工作（因为它提供了符合条件的方法，即<code>DisposeAsync()</code>方法）：</p><pre><code>await using (var c = new MyAsyncDisposableClass().ConfigureAwait(false))
+{
+    ...
+}
+</code></pre><p>这里有个小问题是 <code>c</code> 的类型不是<code>MyAsyncDisposableClass</code>，而是<code>System.Runtime.CompilerServices.ConfiguredAsyncDisposable</code>（也就是<code>IAsyncDisposable</code>的<code>ConfigureAwait</code>方法返回的类型）。</p><p>避免这种情况你需要额外写一行代码：</p><pre><code>var c = new MyAsyncDisposableClass();
+await using (c.ConfigureAwait(false))
+{
+	...
+}
+</code></pre><p>这样一来 <code>c</code> 的类型是预想中的<code>MyAsyncDisposableClass</code>。只是这样就让变量 <code>c</code>的作用域变大了，如果有影响的话，可以用一个大括号包起来就好了。</p><h2 id=我使用了configureawaitfalse但我的asynclocal依然顺序执行了代码是bug吗>我使用了<code>ConfigureAwait(false)</code>，但我的<code>AsyncLocal</code>依然顺序执行了代码。是BUG吗？</h2><blockquote><p>译注，完全不知道什么是<code>AsyncLocal</code>，待翻译</p></blockquote><p>不，这是符合预期的。</p><h3 id=编程语言能帮助我在我的库中避免显式的使用configureawaitfalse吗>编程语言能帮助我在我的库中避免显式的使用<code>ConfigureAwait(false)</code>吗？</h3><p>对于需要显式的使用<code>ConfigureAwait(false)</code>，库的开发者有时候表示有点失落，并且寻求侵入性更小的替代方式。</p><p>但目前来说没有其他替代方式，至少没有语言、编译器、运行时内置的替代方式。不过对于这种解决方案可能会是什么样子的，有许多的建议，比如：</p><p><a href=https://github.com/dotnet/csharplang/issues/645>https://github.com/dotnet/csharplang/issues/645</a></p><p><a href=https://github.com/dotnet/csharplang/issues/2542>https://github.com/dotnet/csharplang/issues/2542</a></p><p><a href=https://github.com/dotnet/csharplang/issues/2649>https://github.com/dotnet/csharplang/issues/2649</a></p><p><a href=https://github.com/dotnet/csharplang/issues/2746>https://github.com/dotnet/csharplang/issues/2746</a></p><p>如果这对你很重要，或者你感觉有新的更有趣的想法，建议您对上面的这些或者是其他更新的方案贡献你的想法。</p><footer class=site-footer><span class=site-footer-credits>Made with <a href=https://gohugo.io/>Hugo</a>. Themed by <a href=https://github.com/zwbetz-gh/cayman-hugo-theme>Cayman</a>. Deployed to <a href=https://www.netlify.com/>Netlify</a>.</span></footer></section><script>window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;ga('create','UA-123456789-1','auto');ga('send','pageview');</script><script async src=https://www.google-analytics.com/analytics.js></script></body></html>

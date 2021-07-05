@@ -1,0 +1,36 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=x-ua-compatible content="IE=edge"><meta name=generator content="Hugo 0.74.2"><link rel=stylesheet href=https://lightjiao.github.io/css/normalize.css><link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel=stylesheet type=text/css><link rel=stylesheet href=https://lightjiao.github.io/css/cayman.066f74f11db70a4de4e99dfcd99a63936bb29c55fd697c22b6c5f447cdb61e3a.css><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css integrity=sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js integrity=sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ crossorigin=anonymous></script><script defer src=https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body);></script><title>C#中的问号运算符总结（语法糖） | Lightjiao的博客</title></head><body><section class=page-header><h1 class=project-name>Lightjiao的博客</h1><h2 class=project-tagline>👨‍💻电子游戏开发者 | 🎮电子游戏爱好者 | 🏊‍♂️游泳爱好者</h2><nav><a href=/ class=btn>Blog</a>
+<a href=/tags/ class=btn>Tags</a>
+<a href=/about/ class=btn>About</a>
+<a href=/index.xml class=btn>RSS</a></nav></section><section class=main-content><h1>C#中的问号运算符总结（语法糖）</h1><hr><h3 id=heading><code>??</code></h3><p><code>??</code>运算符，如果左值不为<code>null</code>则返回左值，否则返回其右值。</p><p>如果其左值不为<code>null</code>，则不会执行右值。</p><p>下面的两种写法相等：</p><pre><code>var value = first ?? second;
+</code></pre><pre><code>var value = first != null ? first : second;
+</code></pre><p>在C#7.3及其之前，<code>??</code>运算符的左值必须是引用类型或者可以为null的值类型（那时候int类型不可以为null的），从C#8.0开始，约束变成了：<code>??</code>和<code>??=</code>操作符的左值不可以为非空的值类型</p><hr><h3 id=heading-1><code>??=</code></h3><p><code>??=</code> 运算符，如果其左值为<code>null</code>，则将右值赋值给左值；如果左值不为<code>null</code>，则不执行右值表达式</p><p>下面的两种写法相等:</p><pre><code>value ??= newValue;
+</code></pre><pre><code>if (value == null) {
+    value = newValue;
+}
+</code></pre><p><code>??=</code> 的左值必须是变量（variable）、属性（property），或者<a href=https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/indexers/>indexer</a></p><blockquote><p>附：</p><p><code>??</code>与<code>??=</code>运算符是从右往左计算的，下面的写法是等同的:</p><pre><code>a ?? b ?? c;
+d ??= e ??= f;
+</code></pre><pre><code>a ?? (b ?? c);
+d ??= (e ??= f);
+</code></pre></blockquote><blockquote><p>附2：</p><p><code>??</code> 和 <code>??=</code> 运算符不可以被重载</p></blockquote><hr><h3 id=和><code>?.</code>和<code>?[]</code></h3><p>在C#6及其之后可以使用</p><p><code>?.</code>用于访问成员，<code>?[]</code>用于访问元素，解释如下：</p><ul><li>如果<code>a</code>为null，那么<code>a?.x</code> 或者 <code>a?[x]</code>是null</li><li>如果<code>a</code>不为null，那么，<code>a?.x</code> 或者 <code>a?[x]</code>的结果与<code>a.x</code> <code>a[x]</code>含义一样</li></ul><hr><h3 id=t><code>T?</code></h3><p>可空值类型 <code>T?</code> 表示其基础值类型<code>T</code>的所有值和一个可选的<code>null</code>值</p><p>比如你可以把<code>true</code> <code>false</code> <code>null</code> 三个值赋给一个 <code>bool?</code> 的类型。</p><p><code>T?</code>继承自<code>System.Nullable&lt;T></code></p><pre><code>// 举例代码
+int? a = 1;
+int? b = null;
+
+public AFunc(int? a, int? b) {
+	// 参数a 和b 可以为null 的写法
+}
+</code></pre><blockquote><p>❓ 还有一个 Nullable reference types，完全看不懂：引用类型本身不就是可以为null的嘛？TO DO OR NEVER</p></blockquote><blockquote><p>基础值类型<code>T</code>本身不可以为<code>null</code>，而<code>T?</code> 可以。</p></blockquote><blockquote><p>校验<code>T?</code>是不是<code>null</code>：</p><pre><code>int? c = 7;
+if (c != null) {
+	// 校验c是不是不等于null
+}
+if (c is int) {
+ 	// 校验C变量是不是int（而不是int?）
+}
+if (c is null) {
+	// 我没有测试过不知道
+}
+</code></pre></blockquote><blockquote><p>将可空值类型转换为基础值类型：直接赋值就好啦</p><pre><code>int? a = 28;
+int b = a ?? -1;
+
+int? c = null;
+int d = c ?? -1;
+</code></pre><p><code>T</code>可以隐式转换为<code>T?</code>，<code>T?</code>不可隐式转换为<code>T</code>，在强转时候（显式<code>int a = (int)b;</code>），如果b为null则会抛异常，b不为null则正常执行。</p></blockquote><footer class=site-footer><span class=site-footer-credits>Made with <a href=https://gohugo.io/>Hugo</a>. Themed by <a href=https://github.com/zwbetz-gh/cayman-hugo-theme>Cayman</a>. Deployed to <a href=https://www.netlify.com/>Netlify</a>.</span></footer></section><script>window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;ga('create','UA-123456789-1','auto');ga('send','pageview');</script><script async src=https://www.google-analytics.com/analytics.js></script></body></html>
