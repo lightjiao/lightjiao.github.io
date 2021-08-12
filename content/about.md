@@ -1,15 +1,11 @@
 ---
-title: "关于我"
+title: ""
 layout: "about"
 ---
 
 ## 关于我
 
-一个从web后台转行游戏前端的程序员。
-
-- [我的转行经历](https://lightjiao.github.io/posts/013.chang-my-career-to-unity/)
-
-我的Github: https://github.com/lightjiao
+[从互联网后台转行做游戏的开发者](https://lightjiao.github.io/posts/013.chang-my-career-to-unity/)
 
 ## 非游戏开发工作经历
 
@@ -22,10 +18,10 @@ layout: "about"
 
 ## 游戏开发工作经历
 
-- 2020.07 ~ 2020.11  |  杭州某中型企业
+- 2020.07 ~ 2020.11  |  游戏公国
   - 卡牌类战斗手游（Unity）
   - 主要负责UI以及搭建异步热更框架
-- 2020.11 ~ 2021.07  |  杭州某小型企业
+- 2020.11 ~ 2021.07  |  慌木科技
   - 第三人称射击 roguelike 手游（Unity）
   - 主要负责战斗系统的开发，与战斗策划紧密的沟通协作
   - 搭建Jenkins 自动化打包系统（[Jenkins自动化打包Unity踩坑一览](https://lightjiao.github.io/posts/027.jenkins-build-unity-problems/)）
