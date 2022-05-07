@@ -8,7 +8,7 @@ layout: "about"
 
 ## 生活
 
-平时爱好游泳与电子游戏，只不过最近半年因为外耳道反复发炎，游泳去得少了很多
+爱好游泳与电子游戏
 
 
 ## 工作
@@ -20,7 +20,7 @@ layout: "about"
  - 参与战斗系统的开发，与战斗策划、美术紧密的沟通协作
 
 #### 慌木科技 | 2020.11 ~ 2021.07 
- - 第三人称射击 Roguelike 手游客户端开发
+ - TPS Roguelike 手游客户端开发
  - 主要负责战斗系统的开发，与战斗策划紧密的沟通协作
  - 搭建Jenkins 自动化打包系统（[Jenkins自动化打包Unity踩坑一览](https://lightjiao.github.io/posts/027.jenkins-build-unity-problems/)）
 
