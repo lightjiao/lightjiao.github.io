@@ -31,9 +31,7 @@ def generate_title_from_file(dir_path, file_name):
 
 
 README_Template = """# Lightjiao的博客  
-👨‍💻电子游戏开发者  🎮电子游戏爱好者  🏊‍♂️游泳爱好者"
-
-## [关于我](https://github.com/lightjiao/lightjiao.github.io/blob/master/Blogs/000.About-me.md)  
+👨‍💻电子游戏开发者  🎮电子游戏爱好者  🏊‍♂️游泳爱好者 [更多关于我...](https://github.com/lightjiao/lightjiao.github.io/blob/master/Blogs/000.About-me.md)
 
 """
 
