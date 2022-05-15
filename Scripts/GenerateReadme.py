@@ -14,8 +14,8 @@ def generate_title_from_file(dir_path, file_name):
     title = ""
     url = ""
 
-    with open(dir_path + "/" + file_name, 'r', encoding="utf-8") as f:
-    # with open(dir_path + "/" + file_name, 'r') as f:
+    # with open(dir_path + "/" + file_name, 'r', encoding="utf-8") as f:
+    with open(dir_path + "/" + file_name, 'r') as f:
         content_lines = f.readlines()
         for line in content_lines:
             if line.startswith("draft: true"):
