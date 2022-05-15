@@ -13,21 +13,24 @@ def generate_title_from_file(dir_path, file_name):
     date = ""
     title = ""
     url = ""
+    time_stamp = ""
 
     # with open(dir_path + "/" + file_name, 'r', encoding="utf-8") as f:
     with open(dir_path + "/" + file_name, 'r') as f:
         content_lines = f.readlines()
         for line in content_lines:
             if line.startswith("draft: true"):
-                return None
+                return None, None
             if line.startswith("title: "):
                 title = line[7:].strip().strip("\"")
             elif line.startswith("date: "):
-                date = line[6:].strip()[:10]
+                time_stamp = line[6:].strip()
+                date = time_stamp[:10]
+
             url = "https://github.com/lightjiao/lightjiao.github.io/blob/master/Blogs/" + file_name
 
     title_template = "- {0}: [{1}]({2})".format(date, title, url)
-    return title_template
+    return time_stamp, title_template
 
 
 README_Template = """# Lightjiao的博客  
@@ -45,13 +48,12 @@ if __name__ == '__main__':
 
     title_dic = {}
     for file_name in get_file_path_list(dir_path):
-        title = generate_title_from_file(dir_path, file_name)
+        time_stamp, title = generate_title_from_file(dir_path, file_name)
         if title == None:
             continue
-        if (title.find("000.") != -1):
+        if (title.find("000.About-me") != -1):
             continue
-        date = title[2:12]
-        title_dic[date] = title
+        title_dic[time_stamp] = title
 
     old_year_str = ""
     sorted_time_stamp = sorted(title_dic.keys(), reverse=True)
