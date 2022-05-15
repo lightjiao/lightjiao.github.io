@@ -14,8 +14,8 @@ def generate_title_from_file(dir_path, file_name):
     title = ""
     url = ""
 
-    # with open(dir_path + "/" + file_name, 'r', encoding="utf-8") as f:
-    with open(dir_path + "/" + file_name, 'r') as f:
+    with open(dir_path + "/" + file_name, 'r', encoding="utf-8") as f:
+    # with open(dir_path + "/" + file_name, 'r') as f:
         content_lines = f.readlines()
         for line in content_lines:
             if line.startswith("draft: true"):
@@ -41,19 +41,20 @@ if __name__ == '__main__':
     str_list = []
     dir_path = sys.argv[1]
 
-    title_list = []
+    title_dic = {}
     for file_name in get_file_path_list(dir_path):
         title = generate_title_from_file(dir_path, file_name)
         if title == None:
             continue
         if (title.find("000.") != -1):
             continue
-        title_list.append(title)
-    title_list.reverse()
+        date = title[2:12]
+        title_dic[date] = title
 
-   
     old_year_str = ""
-    for title in title_list:
+    sorted_time_stamp = sorted(title_dic.keys(), reverse=True)
+    for time_stamp in sorted_time_stamp:
+        title = title_dic[time_stamp]
         the_year = title[2:6]
         if the_year != old_year_str:
             README_Template += "## " + the_year + "\n"
