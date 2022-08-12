@@ -34,6 +34,7 @@ def generate_title_from_file(dir_path, file_name):
 
 
 README_Template = """# Lightjiao的博客  
+![Visitor Badge](https://visitor-badge.laobi.icu/badge?page_id=lightjiao.github.io)
 
 ## 关于我
 - 👨‍💻电子游戏开发者  🎮电子游戏爱好者  🏊‍♂️游泳爱好者  
