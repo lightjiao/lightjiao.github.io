@@ -21,6 +21,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./__Build
+          # enable_jekyll: true
           publish_branch: master
           keep_files: false
           force_orphan: true

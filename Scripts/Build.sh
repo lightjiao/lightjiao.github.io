@@ -1,4 +1,5 @@
 mkdir __Build/
+rm -rf __Build/*
 mkdir __Build/Blogs/
 
 cp ./Blogs/*.md ./__Build/Blogs/
